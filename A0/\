@@ -13,7 +13,6 @@ using namespace glm;
 using namespace std;
 
 const float PI = 3.14159265f;
-const float SIZE_STEP = 0.25f;
 
 
 //----------------------------------------------------------------------------------------
@@ -24,6 +23,14 @@ A0::A0()
 {
     initializeTriangleSettings();
 
+}
+
+// Initialize/Reset Function
+void A0::initializeTriangleSettings() {
+    m_shape_color = glm::vec3(1.0f, 1.0f, 1.0f);
+    m_shape_size = 1.0f;
+    m_shape_rotation = 0.0f;
+	m_shape_translation = vec2(0.0f);
 }
 
 //----------------------------------------------------------------------------------------
@@ -163,15 +170,6 @@ void A0::uploadUniformsToShader()
 }
 
 //----------------------------------------------------------------------------------------
-// Initialize/Reset Triangle color,size,shape,rotation
-void A0::initializeTriangleSettings() {
-    m_shape_color = glm::vec3(1.0f, 1.0f, 1.0f);
-    m_shape_size = 1.0f;
-    m_shape_rotation = 0.0f;
-	m_shape_translation = vec2(0.0f);
-}
-
-//----------------------------------------------------------------------------------------
 /*
  * Called once per frame, before guiLogic().
  */
@@ -210,20 +208,15 @@ void A0::guiLogic()
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 		}
 
-		if( ImGui::Button( "Reset Triangle" ) ) {
-            initializeTriangleSettings();
-		}
-
 		// Retrieve red color component from slider and store in the first element of
 		// m_shape_color.
 		ImGui::SliderFloat("Red Channel", &m_shape_color.r, 0.0f, 1.0f);
 
-		// The other two color sliders
+		// Add more gui elements here here ...
 		ImGui::SliderFloat("Green Channel", &m_shape_color.g, 0.0f, 1.0f);
 		ImGui::SliderFloat("Blue Channel", &m_shape_color.b, 0.0f, 1.0f);
 
-        // The rotation slider
-		ImGui::SliderFloat("Rotate Triangle", &m_shape_rotation, 0.0f, 2 * PI);
+		ImGui::SliderFloat("Rotate Triangle", &m_shape_rotation, 0.0f, 1.0f);
 
 
 		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
@@ -353,8 +346,8 @@ bool A0::keyInputEvent(int key, int action, int mods) {
 		if (key == GLFW_KEY_EQUAL) {
 			cout << "+ key pressed" << endl;
 
-			// increase shape size.
-            m_shape_size += SIZE_STEP;
+			// TODO - increase shape size.
+            m_shape_size++;
 
 			eventHandled = true;
 		}
@@ -362,8 +355,8 @@ bool A0::keyInputEvent(int key, int action, int mods) {
 		if (key == GLFW_KEY_MINUS) {
 			cout << "- key pressed" << endl;
 
-			// decrease shape size.
-            m_shape_size -= SIZE_STEP;
+			// TODO - decrease shape size.
+            m_shape_size++;
 
 			eventHandled = true;
 		}
@@ -371,7 +364,7 @@ bool A0::keyInputEvent(int key, int action, int mods) {
 		if (key == GLFW_KEY_Q) {
 			cout << "Q key pressed" << endl;
 
-			// close the application.
+			// TODO - close the application.
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 
 			eventHandled = true;
@@ -379,7 +372,7 @@ bool A0::keyInputEvent(int key, int action, int mods) {
         if (key == GLFW_KEY_R) {
 			cout << "R key pressed" << endl;
 
-			// Reset Shape size.
+			// TODO - Reset Shape size.
             initializeTriangleSettings();
 
 			eventHandled = true;
