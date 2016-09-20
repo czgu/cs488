@@ -166,8 +166,8 @@ void A1::initCube() {
     size_t vertex_sz = 3 * 8;
 	float *verts = new float[ vertex_sz ];
 
-    // triangle (3) * 2 per surface * 6 surfaces
-    size_t surface_sz = 3 * 2 * 6;
+    // triangle (3) * 2 per surface * 6 surfaces + 2 point * 12 lines
+    size_t surface_sz = 3 * 2 * 6 + 2 * 12;
     unsigned int* surface_elements = new unsigned int[surface_sz];
 	size_t ct = 0;
 
@@ -238,7 +238,7 @@ void A1::initCube() {
     surface_elements[28] = up_right_bottom;
     surface_elements[29] = down_right_bottom;
 
-    // Top
+    // Top Surface
     surface_elements[30] = up_left_top;
     surface_elements[31] = up_left_bottom;
     surface_elements[32] = up_right_top;
@@ -246,6 +246,46 @@ void A1::initCube() {
     surface_elements[33] = up_right_top;
     surface_elements[34] = up_right_bottom;
     surface_elements[35] = up_left_bottom;
+
+    // Lines for bottom
+    surface_elements[36] = down_left_top;
+    surface_elements[37] = down_left_bottom;
+
+    surface_elements[38] = down_left_top;
+    surface_elements[39] = down_right_top;
+
+    surface_elements[40] = down_right_bottom;
+    surface_elements[41] = down_right_top;
+
+    surface_elements[42] = down_right_bottom;
+    surface_elements[43] = down_left_bottom;
+
+    // Sides
+    surface_elements[44] = down_left_top;
+    surface_elements[45] = up_left_top;
+
+    surface_elements[46] = down_right_top;
+    surface_elements[47] = up_right_top;
+
+    surface_elements[48] = down_left_bottom;
+    surface_elements[49] = up_left_bottom;
+
+    surface_elements[50] = down_right_bottom;
+    surface_elements[51] = up_right_bottom;
+
+    // Top
+    surface_elements[52] = up_left_top;
+    surface_elements[53] = up_left_bottom;
+
+    surface_elements[54] = up_left_top;
+    surface_elements[55] = up_right_top;
+
+    surface_elements[56] = up_right_bottom;
+    surface_elements[57] = up_right_top;
+
+    surface_elements[58] = up_right_bottom;
+    surface_elements[59] = up_left_bottom;
+
 
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays( 1, &m_cube_vao );
@@ -449,9 +489,8 @@ void A1::draw()
                 int height = this->cubes[i * DIM + j].height;
                 float *rgb = this->colours[this->cubes[i * DIM + j].colour].rgb;
 
-                glUniform3f( col_uni, rgb[0], rgb[1], rgb[2] );
-
                 for (int k = 0; k < height; k++) {
+                    //Draw the Cube!
                     mat4 cube_location;
                     cube_location = glm::translate(
                         cube_location,
@@ -461,9 +500,16 @@ void A1::draw()
                         cube_location,
                         center_v
                     );
-                    glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( cube_location ) );
 
+                    // Surfaces
+                    glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( cube_location ) );
+                    glUniform3f( col_uni, rgb[0], rgb[1], rgb[2] );
                     glDrawElements(GL_TRIANGLES, 3 * 6 * 2, GL_UNSIGNED_INT, 0);
+
+                    // Borders
+                    glUniform3f( col_uni, 0, 0, 0 );
+                    glDrawElements(GL_LINES, 2 * 12, GL_UNSIGNED_INT, reinterpret_cast<const GLvoid *>(3 * 6 * 2));
+
                 }
             }
         }
@@ -517,7 +563,7 @@ bool A1::mouseMoveEvent(double xPos, double yPos)
             } else {
                 float delta = xPos - this->lastMouseX;
 
-                rotation = rotation + (delta/m_windowWidth) * PI;
+                rotation = rotation + (delta/m_windowWidth) * 2 * PI;
 
                 // Make sure rotation is between [0, 2PI]
                 while (rotation > 2 * PI) {
