@@ -77,4 +77,7 @@ private:
     float rotation;
     float zoom;
 
+    // Util
+    bool border;
+    bool surface;
 };

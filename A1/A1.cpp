@@ -27,6 +27,9 @@ A1::A1()
     this->rotation = 0;
     this->zoom = 1;
 
+    this->border = false;
+    this->surface = true;
+
     initColour();
 }
 
@@ -459,9 +462,51 @@ void A1::draw()
 
 		glUniformMatrix4fv( P_uni, 1, GL_FALSE, value_ptr( proj ) );
 		glUniformMatrix4fv( V_uni, 1, GL_FALSE, value_ptr( modifiedView ) );
-		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( W ) );
 
-		// Just draw the grid for now.
+        // Draw all the cubes
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube_ebo );
+        glBindVertexArray( m_cube_vao );
+        for (int i = 0; i < DIM; i++) {
+            for (int j = 0; j < DIM; j++) {
+                int height = this->cubes[i * DIM + j].height;
+                float *rgb = this->colours[this->cubes[i * DIM + j].colour].rgb;
+
+                for (int k = 0; k < height; k++) {
+                    //Draw the Cube!
+                    mat4 cube_location;
+                    cube_location = glm::translate(
+                        cube_location,
+                        vec3(i, k, j)
+                    );
+                    cube_location = glm::translate(
+                        cube_location,
+                        center_v
+                    );
+
+                    glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( cube_location ) );
+
+                    // Surfaces
+                    if (this->surface) {
+                        glUniform3f( col_uni, rgb[0], rgb[1], rgb[2] );
+                        glDrawElements(GL_TRIANGLES, 3 * 6 * 2, GL_UNSIGNED_INT, 0);
+                    }
+                    // Borders
+                    if (this->border) {
+                        if (this->surface) {
+                            glUniform3f( col_uni, 1 - rgb[0], 1 - rgb[1], 1 - rgb[2] );
+                        } else {
+                            glUniform3f( col_uni, rgb[0], rgb[1], rgb[2] );
+                        }
+                        glDrawElements(GL_LINES, 2 * 24 , GL_UNSIGNED_INT, (void *)(3 * 6 * 2 * sizeof(unsigned int)));
+                    }
+
+                }
+            }
+        }
+
+		// Draw the grid now
+        // --------------------------------------------------------
+		glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( W ) );
 		glBindVertexArray( m_grid_vao );
 		glUniform3f( col_uni, 1, 1, 1 );
 		glDrawArrays( GL_LINES, 0, (3+DIM)*4 );
@@ -490,41 +535,9 @@ void A1::draw()
         }
         glUniform3fv( col_uni, 1, value_ptr( indicatorColour ) );
 
-        glDrawArrays( GL_TRIANGLES, (3+DIM)*4, 18 );
-        // Now draw all the cubes
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube_ebo );
-        glBindVertexArray( m_cube_vao );
-        for (int i = 0; i < DIM; i++) {
-            for (int j = 0; j < DIM; j++) {
-                int height = this->cubes[i * DIM + j].height;
-                float *rgb = this->colours[this->cubes[i * DIM + j].colour].rgb;
-
-                for (int k = 0; k < height; k++) {
-                    //Draw the Cube!
-                    mat4 cube_location;
-                    cube_location = glm::translate(
-                        cube_location,
-                        vec3(i, k, j)
-                    );
-                    cube_location = glm::translate(
-                        cube_location,
-                        center_v
-                    );
-
-                    // Surfaces
-                    glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( cube_location ) );
-                    glUniform3f( col_uni, rgb[0], rgb[1], rgb[2] );
-                    glDrawElements(GL_TRIANGLES, 3 * 6 * 2, GL_UNSIGNED_INT, 0);
-
-                    // Borders
-                    glUniform3f( col_uni, 1 - rgb[0], 1 - rgb[1], 1 - rgb[2] );
-                    glDrawElements(GL_LINES, 2 * 24 , GL_UNSIGNED_INT, (void *)(3 * 6 * 2 * sizeof(unsigned int)));
-
-                }
-            }
-        }
-
+		glDisable( GL_DEPTH_TEST );
 		// Highlight the active square.
+        glDrawArrays( GL_TRIANGLES, (3+DIM)*4, 18 );
 	m_shader.disable();
 
 	// Restore defaults
@@ -673,6 +686,7 @@ bool A1::keyInputEvent(int key, int action, int mods) {
             eventHandled = true;
         }
 
+        // Moving active cell
         int shiftPressed = glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT);
 
         if (key == GLFW_KEY_UP) {
@@ -695,6 +709,18 @@ bool A1::keyInputEvent(int key, int action, int mods) {
             eventHandled = true;
         }
 
+        // Border and surfaces
+        if (key == GLFW_KEY_B) {
+            this->border = !this->border;
+            eventHandled = true;
+        }
+
+        if (key == GLFW_KEY_S) {
+            this->surface = !this->surface;
+            eventHandled = true;
+        }
+
+        // Controls
         if (key == GLFW_KEY_Q) {
             glfwSetWindowShouldClose(m_window, GL_TRUE);
             eventHandled = true;
