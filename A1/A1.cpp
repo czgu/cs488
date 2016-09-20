@@ -166,9 +166,6 @@ void A1::initCube() {
     size_t vertex_sz = 3 * 8;
 	float *verts = new float[ vertex_sz ];
 
-    // triangle (3) * 2 per surface * 6 surfaces + 2 point * 12 lines
-    size_t surface_sz = 3 * 2 * 6 + 2 * 12;
-    unsigned int* surface_elements = new unsigned int[surface_sz];
 	size_t ct = 0;
 
     // Add the cube vertices
@@ -181,6 +178,10 @@ void A1::initCube() {
         verts[ct + 2] = z;
         ct += 3;
     }
+
+    // triangle (3) * 2 per surface * 6 surfaces + 2 point * 12 lines
+    size_t surface_sz = 3 * 2 * 6 + 2 * 12;
+    unsigned int* surface_elements = new unsigned int[surface_sz];
 
     // Create the cube surface relationship
     int down_left_top = 0;
@@ -285,7 +286,6 @@ void A1::initCube() {
 
     surface_elements[58] = up_right_bottom;
     surface_elements[59] = up_left_bottom;
-
 
 	// Create the vertex array to record buffer assignments.
 	glGenVertexArrays( 1, &m_cube_vao );
@@ -399,6 +399,7 @@ void A1::guiLogic()
 		if( ImGui::Button( "Quit Application" ) ) {
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 		}
+		ImGui::Text( "Active Cell: Col %lu, Row %lu", active_cell / DIM, active_cell % DIM );
 
 		// Eventually you'll create multiple colour widgets with
 		// radio buttons.  If you use PushID/PopID to give them all
@@ -477,10 +478,19 @@ void A1::draw()
             center_v
         );
         glUniformMatrix4fv( M_uni, 1, GL_FALSE, value_ptr( indicator_location ) );
-        // indicator color
-        glUniform3f( col_uni, 1, 0, 0 );
-        glDrawArrays( GL_TRIANGLES, (3+DIM)*4, (3+DIM)*4 + 18 );
 
+        // Set the indicator colour
+        vec3 indicatorColour = vec3(1.0f, 1.0f, 1.0f);
+        if (this->cubes[active_cell].height > 0) {
+            // look at the cube color
+            float *rgb = this->colours[this->cubes[active_cell].colour].rgb;
+            if (rgb[0] >= 0.8f && rgb[1] >= 0.8f && rgb[2] >= 0.8f) {
+                indicatorColour = vec3(0.0f, 0.0f, 0.0f);
+            }
+        }
+        glUniform3fv( col_uni, 1, value_ptr( indicatorColour ) );
+
+        glDrawArrays( GL_TRIANGLES, (3+DIM)*4, 18 );
         // Now draw all the cubes
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube_ebo );
         glBindVertexArray( m_cube_vao );
@@ -507,8 +517,8 @@ void A1::draw()
                     glDrawElements(GL_TRIANGLES, 3 * 6 * 2, GL_UNSIGNED_INT, 0);
 
                     // Borders
-                    glUniform3f( col_uni, 0, 0, 0 );
-                    glDrawElements(GL_LINES, 2 * 12, GL_UNSIGNED_INT, reinterpret_cast<const GLvoid *>(3 * 6 * 2));
+                    glUniform3f( col_uni, 1 - rgb[0], 1 - rgb[1], 1 - rgb[2] );
+                    glDrawElements(GL_LINES, 2 * 24 , GL_UNSIGNED_INT, (void *)(3 * 6 * 2 * sizeof(unsigned int)));
 
                 }
             }
@@ -616,8 +626,8 @@ bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 
 	// Zoom in or out.
     // We only set scroll based on yOffSet
-    // Moving Up means enlarge, down means shrink
-    zoom -= (yOffSet * 0.5); // half offset to slow down zoom
+    // Moving Up means enlarge, down means shrink (on the lab mouse)
+    zoom += (yOffSet * 0.5); // half offset to slow down zoom
     zoom = glm::clamp(zoom, 0.5f, 5.0f);
 
 
@@ -667,18 +677,34 @@ bool A1::keyInputEvent(int key, int action, int mods) {
 
         if (key == GLFW_KEY_UP) {
             setActiveCell(0, -1, shiftPressed);
+            eventHandled = true;
         }
 
         if (key == GLFW_KEY_DOWN) {
             setActiveCell(0, 1, shiftPressed);
+            eventHandled = true;
         }
 
         if (key == GLFW_KEY_LEFT) {
             setActiveCell(-1, 0, shiftPressed);
+            eventHandled = true;
         }
 
         if (key == GLFW_KEY_RIGHT) {
             setActiveCell(1, 0, shiftPressed);
+            eventHandled = true;
+        }
+
+        if (key == GLFW_KEY_Q) {
+            glfwSetWindowShouldClose(m_window, GL_TRUE);
+            eventHandled = true;
+        }
+
+        if (key == GLFW_KEY_R) {
+            for (int i = 0; i < DIM * DIM; i++) {
+                this->cubes[i].height = 0;
+            }
+            eventHandled = true;
         }
 	}
 
