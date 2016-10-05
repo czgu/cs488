@@ -96,6 +96,7 @@ protected:
 
     float cClamp(float orig, float delta, float min, float max, bool cycle=true);
 
+    glm::mat4 makeScaleMatrix(glm::vec3 xyz);
     glm::mat4 makeRotationMatrix(glm::vec3 xyz);
     glm::mat4 makeTranslationMatrix(glm::vec3 xyz);
     glm::mat4 makeProjectionMatrix(float fov, float n, float f);
@@ -113,18 +114,19 @@ protected:
 
 
     // Local
-    glm::vec3 model_rotation;
-    glm::vec3 model_translation;
-    glm::vec3 model_scale;
+    glm::mat4 model_rotation;
+    glm::mat4 model_translation;
+    glm::mat4 model_scale;
 
     // View
-    glm::vec3 view_rotation;
-    glm::vec3 view_translation;
+    glm::mat4 view_rotation;
+    glm::mat4 view_translation;
     glm::vec3 perspective; // fov, near, far
 
     // Viewport
     glm::vec2 view_port_origin;
     glm::vec2 view_port_size; // width, height
+    glm::vec2 view_port_corner;
 
     // Drawing informations
     std::vector<glm::vec3> points;
@@ -136,7 +138,9 @@ protected:
 
     bool trackDragging[3];
     float lastMouseX[3];
-
-    bool show_detailed;
-
 };
+
+
+inline int min(int a, int b);
+inline int abs(int a);
+

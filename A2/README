@@ -11,8 +11,7 @@
 ## Manual
 - No extra commands, features, files has been added
 - All required features are implemented
-- Other than the given gui, press d to toggle detailed number for all translation/scale/rotate view/model values
 - The camera looks down at the -z axis, same as OpenGL, it's default location is set to be (x=0, y=1, z=9)
 - gnomon are represented with 4 vertices and 3 lines, x axis is red, y axis is green, z axis is blue, they also get clipped
-- Near plane can be as close as 0.05, far plane can be as far as 30
+- Near plane can be as close as 0.05, far plane can be as far as 30, they cannot overlap each other
 - rotations of axis are occured in rotation along x-axis, y-axis, and lastly z-axis order

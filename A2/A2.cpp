@@ -51,8 +51,7 @@ Line::Line(vec4 a, vec4 b, LineData* data)
 //----------------------------------------------------------------------------------------
 // Constructor
 A2::A2()
-	: m_currentLineColour(vec3(0.0f)),
-      show_detailed(false)
+	: m_currentLineColour(vec3(0.0f))
 {
     for (int i = 0; i < 3; i++) {
         trackDragging[i] = false;
@@ -195,13 +194,13 @@ void A2::initDrawModel() {
 }
 
 void A2::initTransformation() {
-    model_rotation = vec3(0, 0, 0);
-    model_translation = vec3(0, 0, 0);
-    model_scale = vec3(1, 1, 1);
+    model_rotation = makeRotationMatrix(vec3(0, 0, 0));
+    model_translation = makeTranslationMatrix(vec3(0, 0, 0));
+    model_scale = makeScaleMatrix(vec3(1, 1, 1));
 
     // View
-    view_rotation = vec3(0, 0, 0);
-    view_translation = vec3(0, 1, 9);
+    view_rotation = makeRotationMatrix(vec3(0, 0, 0));
+    view_translation = makeTranslationMatrix(vec3(0, 1, 9));
     perspective = vec3(30.0f, 1.0f, 15.0f);
 
     // Viewport
@@ -346,23 +345,14 @@ void A2::appLogic()
         translated_points.push_back(vec4(p, 1));
     }
 
-    // Construct scale matrix
-    mat4 local_scale_mat = transpose(mat4(
-        model_scale.x, 0, 0, 0,
-        0, model_scale.y, 0, 0,
-        0, 0, model_scale.z, 0,
-        0, 0, 0, 1
-    ));
 
     // Apply scale to box points
     for (int i = 0; i < 8; i++) {
-        translated_points[i] = local_scale_mat * translated_points[i];
+        translated_points[i] = model_scale * translated_points[i];
     }
 
     // Construct translation and rotation matrices
-    mat4 local_trans_mat = makeTranslationMatrix(model_translation);
-    mat4 local_rotation_mat = makeRotationMatrix(model_rotation);
-    mat4 local_trans_rot_mat = local_trans_mat * local_rotation_mat;
+    mat4 local_trans_rot_mat = model_translation * model_rotation;
 
     // Apply local rotation/translation to cube points and local coord
     for (int i = 0; i < 12; i ++) {
@@ -370,9 +360,7 @@ void A2::appLogic()
     }
 
     // World to camera
-    mat4 view_trans_mat = makeTranslationMatrix(view_translation);
-    mat4 view_rotation_mat = makeRotationMatrix(view_rotation);
-    mat4 camera_frame = inverse(view_trans_mat * view_rotation_mat);
+    mat4 camera_frame = inverse(view_translation * view_rotation);
 
 
     // Apply view change to all points
@@ -514,15 +502,6 @@ void A2::guiLogic()
         ImGui::EndGroup();
 
         ImGui::Text("FOV:%f Near:%f Far:%f", perspective.x, perspective.y, perspective.z);
-        if (show_detailed) {
-            ImGui::Text("View rotation %f %f %f", view_rotation.x, view_rotation.y, view_rotation.z);
-            ImGui::Text("View translation %f %f %f",  view_translation.x, view_translation.y, view_translation.z);
-            ImGui::Text("Model rotation %f %f %f", model_rotation.x, model_rotation.y, model_rotation.z);
-            ImGui::Text("Model translation %f %f %f", model_translation.x, model_translation.y, model_translation.z);
-            ImGui::Text("Model scale %f %f %f", model_scale.x, model_scale.y, model_scale.z);
-            ImGui::Text("View port (%f,%f) size (%f,%f)", view_port_origin.x, view_port_origin.y, view_port_size.x, view_port_size.y);
-        }
-
 
 		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
 
@@ -618,16 +597,19 @@ bool A2::mouseMoveEvent (
                 if (this->lastMouseX[i] == -1) {
                     if (interaction_mode == 6 && i == 0) {
                         // Set the origin on first click
-                        view_port_origin = vec2(xPos, yPos);
-                        view_port_size = vec2(0, 0);
+                        view_port_corner = vec2(xPos, yPos);
                     }
                 } else {
                     float delta = (xPos - this->lastMouseX[i]) / 5;
 
                     if (interaction_mode == 0) { // O
-                        view_rotation[i] = cClamp(view_rotation[i], delta, 0, 2 * PI);
+                        vec3 v;
+                        v[i] = cClamp(0, delta, 0, 2 * PI);
+                        view_rotation = view_rotation * makeRotationMatrix(v);
                     } else if (interaction_mode == 1) { // N
-                        view_translation[i] += delta;
+                        vec3 v;
+                        v[i] = delta;
+                        view_translation = makeTranslationMatrix(mat3(view_rotation) * v) * view_translation;
                     } else if (interaction_mode == 2) { // P
                         if (i == 0) { // Left
                             perspective[0] = cClamp(perspective[0], delta, 5, 160, false);
@@ -637,27 +619,29 @@ bool A2::mouseMoveEvent (
                             perspective[2] = cClamp(perspective[2], delta, perspective[1], 30, false);
                         }
                     } else if (interaction_mode == 3) { // R
-                        model_rotation[i] = cClamp(model_rotation[i], delta, 0, 2 * PI);
-                    } else if (interaction_mode == 4) { // T
-                        mat3 local_rot_mat = mat3(makeRotationMatrix(model_rotation));
                         vec3 v;
                         v[i] = delta;
-                        model_translation += local_rot_mat * v;
+                        model_rotation = makeRotationMatrix(v) * model_rotation;
+                    } else if (interaction_mode == 4) { // T
+                        vec3 v;
+                        v[i] = delta;
+                        model_translation = makeTranslationMatrix(mat3(model_rotation) * v) * model_translation;
                     } else if (interaction_mode == 5) { // S
-                        model_scale[i] += delta;
+                        model_scale[i][i] += delta;
                     } else if (interaction_mode == 6) { // V
                         if (i == 0) { // L
                             // clamp xPos and yPos
                             int cx = glm::clamp((int)xPos, 0, screen_width);
                             int cy = glm::clamp((int)yPos, 0, screen_height);
 
-                            if (cx > view_port_origin.x && cy > view_port_origin.y) {
-                                view_port_size = vec2(
-                                    cx - view_port_origin.x,
-                                    cy - view_port_origin.y
-                                );
-                            }
-
+                            view_port_origin = vec2(
+                                min(view_port_corner.x, cx),
+                                min(view_port_corner.y, cy)
+                            );
+                            view_port_size = vec2(
+                                abs(cx - view_port_corner.x),
+                                abs(cy - view_port_corner.y)
+                            );
                         }
                     }
                 }
@@ -814,11 +798,6 @@ bool A2::keyInputEvent (
             glfwSetWindowShouldClose(m_window, GL_TRUE);
             eventHandled = true;
         }
-
-        if (key == GLFW_KEY_D) {
-            show_detailed = !show_detailed;
-            eventHandled = true;
-        }
     }
 
 	return eventHandled;
@@ -953,4 +932,22 @@ glm::vec2 A2::viewPortToGLCoord(
         (v.x / screen_width) * 2 - 1,
         -1 * ((v.y / screen_height) * 2 - 1)
     );
+}
+
+glm::mat4 A2::makeScaleMatrix(glm::vec3 xyz) {
+    // Construct scale matrix
+    return transpose(mat4(
+        xyz.x, 0, 0, 0,
+        0, xyz.y, 0, 0,
+        0, 0, xyz.z, 0,
+        0, 0, 0, 1
+    ));
+}
+
+inline int min(int a, int b) {
+    return a > b ? b : a;
+}
+
+inline int abs(int a) {
+    return a > 0 ? a : -1 * a;
 }
