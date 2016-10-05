@@ -1,0 +1,21 @@
+## Compilation
+- Steps
+    $ premake4 gmake
+    $ make
+    $ ./A1
+
+- There is no modification to the default premake4/make.
+- No additional assumptions. (Presumbly cs488 directory should be downloaded and installed as instructed on the course website)
+- The computer I used to run in lab is GL13
+
+## Manual
+- No extra commands, features, files has been added
+- All required features are implemented
+- Added 2 new functions, when user presses B, the program draws border around all the cubes. When user presses s, the program stops drawing cube's surfaces. Both buttons are toggleable.
+- To rotate the grid 360 degrees, you need to drag the cursor from the screen from one end to the other end. I found this to be an appropriate speed for rotation. The rotation is fixed between [0, 2*PI] so when it goes over 2PI it starts at 0 again, and vice versa for when it goes under 0.
+- Zoom is between [0.5, 5]x. It starts at 1x. Scroll up zooms in, and scroll down zooms out.
+- Both zoom and rotation are applied on the view matrix. Zoom is done with scaling and rotation is done with rotation matrix. I choosed view matrix instead of model-to-world matrix because that matrix is heavy used for drawing cubes in different locations.
+- Here is how the logic for colour works: when a new active cell is selected, we switch to the exisiting cube colour if there exists cubes on that cell. Otherwise we carry the selected cell colour over from the previous active cell. The default cell colour is black at location 0.
+- The 8 colour palette are set to be black, blue, green, teal, red, pink, yellow, white
+- For active cell location, there is a text label under "Quit Application" that indicates it's location. The highlight square colour is set to be white for default, however it becomes black if the cell colour is close to white (when rgb values are all > 0.8f)
+- Reset resets colour palette changes

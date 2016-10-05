@@ -37,7 +37,7 @@ protected:
 	virtual bool keyInputEvent(int key, int action, int mods) override;
 
 private:
-	void initColour();
+	void initColour(bool alloc = true);
 	void initGrid();
     void initCube();
 

@@ -326,10 +326,12 @@ void A1::initCube() {
 	CHECK_GL_ERRORS;
 }
 
-void A1::initColour() {
-    this->colours = new Colour[NUM_COLOURS];
-    // We will initialize the palettes to 3 bit rgb colours
+void A1::initColour(bool alloc) {
+    if (alloc) {
+        this->colours = new Colour[NUM_COLOURS];
+    }
 
+    // We will initialize the palettes to 3 bit rgb colours
     // Black
     this->colours[0].rgb[0] = 0.0f;
     this->colours[0].rgb[1] = 0.0f;
@@ -637,11 +639,15 @@ bool A1::mouseButtonInputEvent(int button, int actions, int mods) {
 bool A1::mouseScrollEvent(double xOffSet, double yOffSet) {
 	bool eventHandled(false);
 
-	// Zoom in or out.
-    // We only set scroll based on yOffSet
-    // Moving Up means enlarge, down means shrink (on the lab mouse)
-    zoom += (yOffSet * 0.5); // half offset to slow down zoom
-    zoom = glm::clamp(zoom, 0.5f, 5.0f);
+    if (yOffSet != 0) {
+        // Zoom in or out.
+        // We only set scroll based on yOffSet
+        // Moving Up means enlarge, down means shrink (on the lab mouse)
+        this->zoom += (yOffSet * 0.5); // half offset to slow down zoom
+        this->zoom = glm::clamp(zoom, 0.5f, 5.0f);
+
+        eventHandled = true;
+    }
 
 
 	return eventHandled;
@@ -729,7 +735,17 @@ bool A1::keyInputEvent(int key, int action, int mods) {
         if (key == GLFW_KEY_R) {
             for (int i = 0; i < DIM * DIM; i++) {
                 this->cubes[i].height = 0;
+                this->cubes[i].colour = 0;
             }
+            this->active_cell = 0;
+            this->rotation = 0;
+            this->zoom = 1.0f;
+
+            this->border = false;
+            this->surface = true;
+
+            initColour(false);
+
             eventHandled = true;
         }
 	}

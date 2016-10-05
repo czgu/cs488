@@ -1,0 +1,17 @@
+## Compilation
+- Steps
+    $ premake4 gmake
+    $ make
+    $ ./A2
+
+- There is no modification to the default premake4/make.
+- No additional assumptions. (Presumbly cs488 directory should be downloaded and installed as instructed on the course website)
+- The computer I used to run in lab is GL13
+
+## Manual
+- No extra commands, features, files has been added
+- All required features are implemented
+- Other than the given gui, press d to toggle detailed number for all translation/scale/rotate view/model values
+- The camera looks down at the -z axis, same as OpenGL, it's default location is set to be (x=0, y=1, z=9)
+- gnomon are represented with 4 vertices and 3 lines, x axis is red, y axis is green, z axis is blue, they also get clipped
+- rotations of axis are occured in rotation along x-axis, y-axis, and lastly z-axis order
