@@ -930,7 +930,7 @@ glm::vec2 A2::viewPortToGLCoord(
 ) {
     return vec2(
         (v.x / screen_width) * 2 - 1,
-        -1 * ((v.y / screen_height) * 2 - 1)
+        1 - (v.y / screen_height) * 2
     );
 }
 
