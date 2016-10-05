@@ -629,17 +629,20 @@ bool A2::mouseMoveEvent (
                     } else if (interaction_mode == 1) { // N
                         view_translation[i] += delta;
                     } else if (interaction_mode == 2) { // P
-                        if (i == 0) { // L
+                        if (i == 0) { // Left
                             perspective[0] = cClamp(perspective[0], delta, 5, 160, false);
-                        } else if (i == 1) { // M
+                        } else if (i == 1) { // Middle
                             perspective[1] = cClamp(perspective[1], delta, 0.05, perspective[2], false);
-                        } else if(i == 2) { // R
+                        } else if(i == 2) { // Right
                             perspective[2] = cClamp(perspective[2], delta, perspective[1], 30, false);
                         }
                     } else if (interaction_mode == 3) { // R
                         model_rotation[i] = cClamp(model_rotation[i], delta, 0, 2 * PI);
                     } else if (interaction_mode == 4) { // T
-                        model_translation[i] += delta;
+                        mat3 local_rot_mat = mat3(makeRotationMatrix(model_rotation));
+                        vec3 v;
+                        v[i] = delta;
+                        model_translation += local_rot_mat * v;
                     } else if (interaction_mode == 5) { // S
                         model_scale[i] += delta;
                     } else if (interaction_mode == 6) { // V
