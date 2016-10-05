@@ -616,7 +616,7 @@ bool A2::mouseMoveEvent (
                         } else if (i == 1) { // Middle
                             perspective[1] = cClamp(perspective[1], delta, 0.05, perspective[2], false);
                         } else if(i == 2) { // Right
-                            perspective[2] = cClamp(perspective[2], delta, perspective[1], 30, false);
+                            perspective[2] = MAX(perspective[2] + delta, perspective[1]);
                         }
                     } else if (interaction_mode == 3) { // R
                         vec3 v;
@@ -635,12 +635,12 @@ bool A2::mouseMoveEvent (
                             int cy = glm::clamp((int)yPos, 0, screen_height);
 
                             view_port_origin = vec2(
-                                min(view_port_corner.x, cx),
-                                min(view_port_corner.y, cy)
+                                MIN(view_port_corner.x, cx),
+                                MIN(view_port_corner.y, cy)
                             );
                             view_port_size = vec2(
-                                abs(cx - view_port_corner.x),
-                                abs(cy - view_port_corner.y)
+                                ABS(cx - view_port_corner.x),
+                                ABS(cy - view_port_corner.y)
                             );
                         }
                     }
@@ -942,12 +942,4 @@ glm::mat4 A2::makeScaleMatrix(glm::vec3 xyz) {
         0, 0, xyz.z, 0,
         0, 0, 0, 1
     ));
-}
-
-inline int min(int a, int b) {
-    return a > b ? b : a;
-}
-
-inline int abs(int a) {
-    return a > 0 ? a : -1 * a;
 }

@@ -12,6 +12,9 @@
 // in one shot, rather than reallocating each frame.
 const GLsizei kMaxVertices = 1000;
 #define PI 3.141592653
+#define MIN(a,b) ((a)>(b)?(b):(a))
+#define MAX(a,b) ((a)<(b)?(b):(a))
+#define ABS(a) ((a)>0?(a):-(a))
 
 // Convenience class for storing vertex data in CPU memory.
 // Data should be copied over to GPU memory via VBO storage before rendering.
@@ -139,8 +142,3 @@ protected:
     bool trackDragging[3];
     float lastMouseX[3];
 };
-
-
-inline int min(int a, int b);
-inline int abs(int a);
-
