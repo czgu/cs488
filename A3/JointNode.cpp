@@ -7,7 +7,7 @@
 
 //---------------------------------------------------------------------------------------
 JointNode::JointNode(const std::string& name)
-	: SceneNode(name)
+	: SceneNode(name), hasEmptyJoint(false)
 {
 	m_nodeType = NodeType::JointNode;
 }
@@ -22,6 +22,10 @@ void JointNode::set_joint_x(double min, double init, double max) {
 	m_joint_x.init = init;
 	m_joint_x.max = max;
 	m_joint_x.curr = init;
+
+    if (max - min == 0) {
+        hasEmptyJoint = true;
+    }
 }
 
 //---------------------------------------------------------------------------------------
@@ -30,6 +34,10 @@ void JointNode::set_joint_y(double min, double init, double max) {
 	m_joint_y.init = init;
 	m_joint_y.max = max;
 	m_joint_y.curr = init;
+
+    if (max - min == 0) {
+        hasEmptyJoint = true;
+    }
 }
 
 static double clamp(JointNode::JointRange range, double val) {
@@ -48,6 +56,7 @@ void JointNode::rotate_joint(JointRange& range, double delta) {
 void JointNode::reset_joint() {
     m_joint_x.curr = m_joint_x.init;
     m_joint_y.curr = m_joint_y.init;
+    isSelected = false;
 }
 
 glm::mat4 JointNode::get_x_rotate() const {

@@ -378,6 +378,7 @@ void A3::guiLogic()
         if ( ImGui::Button( "Redo (R)" ) ) {
             redo();
         }
+		ImGui::Text( "[0, %d, %d]", command_stack.curr, (int)command_stack.snapshots.size() - 1 );
 
 	ImGui::End();
 
@@ -857,6 +858,11 @@ void A3::redo() {
 void A3::moveJoint(SceneNode* node, double delta_x, double delta_y) {
     if (node->isSelected) {
         JointNode* jointNode = static_cast<JointNode *>(node);
+
+        if (jointNode->hasEmptyJoint) {
+            delta_x = delta_x;
+            delta_y = delta_x;
+        }
 
         jointNode->rotate_joint(jointNode->m_joint_x, delta_x);
         jointNode->rotate_joint(jointNode->m_joint_y, delta_y);

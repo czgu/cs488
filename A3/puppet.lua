@@ -14,8 +14,12 @@ white = gr.material({1.0, 1.0, 1.0}, {0.1, 0.1, 0.1}, 10)
 yellow = gr.material({1.0, 1.0, 0.0}, {0.1, 0.1, 0.1}, 10)
 purple = gr.material({1.0, 0.0, 1.0}, {0.1, 0.1, 0.1}, 10)
 
-function makeLimb()
-    shoulderJoint = gr.joint('shoulderJoint', {180, 360, 360}, {0, 0, 0})
+function makeLimb(isUpper)
+    if isUpper then
+        shoulderJoint = gr.joint('shoulderJoint', {180, 360, 360}, {0, 0, 0})
+    else
+        shoulderJoint = gr.joint('shoulderJoint', {270, 360, 360}, {0, 0, 0})
+    end
 
     shoulder = gr.mesh('sphere', 'shoulder')
     shoulder:scale(0.1, 0.1, 0.1)
@@ -28,7 +32,12 @@ function makeLimb()
     upper:set_material(red)
     shoulderJoint:add_child(upper)
 
-    elbowJoint = gr.joint('elbowJoint', {200, 360, 360}, {0, 0, 0})
+    if isUpper then
+        elbowJoint = gr.joint('elbowJoint', {-160, -80, 0}, {0, 0, 0})
+    else
+        elbowJoint = gr.joint('elbowJoint', {0, 0, 120}, {0, 0, 0})
+    end
+
     elbowJoint:translate(0, -0.4, 0);
 
     elbow= gr.mesh('sphere', 'elbow')
@@ -42,13 +51,18 @@ function makeLimb()
     lower:set_material(green)
     elbowJoint:add_child(lower)
 
-    wristJoint = gr.joint('wristJoint', {200, 360, 360}, {0,0,0})
+    if isUpper then
+        wristJoint = gr.joint('wristJoint', {-90, 0, 60}, {0,0,0})
+    else -- Foot
+        wristJoint = gr.joint('wristJoint', {-90, -90, 0}, {0,0,0})
+    end
+
     wristJoint:translate(0, -0.4, 0);
 
     hand = gr.mesh('cube', 'hand')
     hand:scale(0.15, 0.15, 0.05);
     hand:set_material(red)
-    hand:translate(0, -0.075, 0);
+    hand:translate(0, -0.035, 0);
     wristJoint:add_child(hand)
 
     elbowJoint:add_child(wristJoint)
@@ -57,19 +71,19 @@ function makeLimb()
     return shoulderJoint
 end
 
-function makeShoulder()
-    centreJoint = gr.joint('centreJoint', {0, 0, 360}, {0, 0, 0});
+function makeShoulder(isUpper)
+    centreJoint = gr.joint('centreJoint', {0, 0, 0}, {-30, 0, 30});
 
     shoulder = gr.mesh('sphere', 'Shoulder');
     shoulder:scale(0.6, 0.25, 0.25);
     shoulder:set_material(yellow);
     centreJoint:add_child(shoulder)
 
-    leftArm = makeLimb()
+    leftArm = makeLimb(isUpper)
     leftArm:translate(-0.6, 0.0, 0.0)
     centreJoint:add_child(leftArm)
 
-    rightArm = makeLimb()
+    rightArm = makeLimb(isUpper)
     rightArm:translate(0.6, 0.0, 0.0)
     centreJoint:add_child(rightArm)
 
@@ -77,7 +91,7 @@ function makeShoulder()
 end
 
 function makeHead()
-    neckLowJoint = gr.joint('neckLowJoint', {0, 0, 360}, {0, 0, 0});
+    neckLowJoint = gr.joint('neckLowJoint', {0, 0, 90}, {-90, 0, 90});
 
     neck = gr.mesh('sphere', 'neck')
     neck:scale(0.10, 0.15, 0.10)
@@ -85,14 +99,10 @@ function makeHead()
     neck:set_material(blue)
     neckLowJoint:add_child(neck)
 
-    neckHighJoint = gr.joint('neckHighJoint', {0, 0, 360}, {0, 0, 360});
-    neckHighJoint:translate(0.0, 0.15, 0.0);
-    neckLowJoint:add_child(neckHighJoint)
-
     head = gr.mesh('sphere', 'head')
-    neckHighJoint:add_child(head)
+    neckLowJoint:add_child(head)
     head:scale(0.3, 0.3, 0.3)
-    head:translate(0.0, 0.2, 0.0)
+    head:translate(0.0, 0.35, 0.0)
     head:set_material(white)
 
     ears = gr.mesh('sphere', 'ears')
@@ -119,11 +129,11 @@ end
 jointTorso = gr.joint('jointTorso', {0,0,0}, {0,0,0});
 rootnode:add_child(jointTorso)
 
-shoulder = makeShoulder()
+shoulder = makeShoulder(true)
 shoulder:translate(0, 0.75, 0);
 jointTorso:add_child(shoulder)
 
-hip = makeShoulder();
+hip = makeShoulder(false);
 hip:translate(0, -0.75, 0);
 jointTorso:add_child(hip)
 
@@ -133,7 +143,7 @@ jointTorso:add_child(head)
 
 torso = gr.mesh('cube', 'torso')
 torso:set_material(white)
-torso:scale(0.75,1.25,0.5);
+torso:scale(0.65,1.25,0.4);
 jointTorso:add_child(torso)
 
 return rootnode
