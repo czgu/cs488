@@ -6,7 +6,7 @@
 
 - There is no modification to the default premake4/make.
 - No additional assumptions. (Presumbly cs488 directory should be downloaded and installed as instructed on the course website)
-- The computer I used to run in lab is GL07
+- The computer I used to run in lab is GL15
 
 ## Manual
 - No extra commands, features, files has been added

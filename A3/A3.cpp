@@ -406,9 +406,6 @@ void A3::guiLogic()
 
 //----------------------------------------------------------------------------------------
 //
-static vec3 invertColour(vec3 rgb) {
-    return vec3(1, 1, 1) - rgb;
-}
 
 // Update mesh specific shader uniforms:
 static void updateShaderUniforms(
@@ -438,7 +435,7 @@ static void updateShaderUniforms(
 		location = shader.getUniformLocation("material.kd");
 		vec3 kd = node.material.kd;
         if (parent->isSelected) {
-            kd = invertColour(kd);
+            kd = vec3(0, 0, 0);
         }
 
 		glUniform3fv(location, 1, value_ptr(kd));
