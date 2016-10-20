@@ -11,8 +11,14 @@ public:
 	void set_joint_y(double min, double init, double max);
 
 	struct JointRange {
-		double min, init, max;
+		double min, init, max, curr;
 	};
+
+    void rotate_joint(JointRange& range, double delta);
+    void reset_joint();
+
+    glm::mat4 get_x_rotate() const;
+    glm::mat4 get_y_rotate() const;
 
 
 	JointRange m_joint_x, m_joint_y;

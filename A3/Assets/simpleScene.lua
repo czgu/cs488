@@ -9,7 +9,7 @@ rootNode = gr.node('root')
 -- Create a GeometryNode with MeshId = 'cube', and name = 'torso'.
 -- MeshId's must reference a .obj file that has been previously loaded into
 -- the MeshConsolidator instance within A3::init().
-cubeMesh = gr.mesh('cube', 'name-of-cube')
+cubeMesh = gr.mesh('suzanne', 'name-of-cube')
 cubeMesh:scale(1.0, 1.0, 1.0)
 cubeMesh:rotate('y', 45.0)
 cubeMesh:translate(0.0, -0.5, -5.0)

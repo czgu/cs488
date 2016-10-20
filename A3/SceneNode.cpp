@@ -133,3 +133,13 @@ std::ostream & operator << (std::ostream & os, const SceneNode & node) {
 
 	return os;
 }
+
+void SceneNode::selectSceneNode(unsigned int id, SceneNode* parent) {
+    if (id == this->m_nodeId && parent != NULL && parent->m_nodeType == NodeType::JointNode) {
+        parent->isSelected = !parent->isSelected;
+    }
+
+    for (SceneNode* children: this->children) {
+        children->selectSceneNode(id, this);
+    }
+}

@@ -41,6 +41,7 @@ public:
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
 
+    void selectSceneNode(unsigned int id, SceneNode* parent = NULL);
 	bool isSelected;
     
     // Transformations

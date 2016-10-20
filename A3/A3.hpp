@@ -9,12 +9,24 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <vector>
+
+#define NUM_JOINT 32
 
 struct LightSource {
 	glm::vec3 position;
 	glm::vec3 rgbIntensity;
 };
 
+struct SnapShot {
+    float angle_x[NUM_JOINT];
+    float angle_y[NUM_JOINT];
+};
+
+struct CommandStack {
+    std::vector<SnapShot> snapshots;
+    int curr;
+};
 
 class A3 : public CS488Window {
 public:
@@ -47,11 +59,16 @@ protected:
 
 	void initPerspectiveMatrix();
 	void uploadCommonSceneUniforms();
-	void renderSceneGraph(const SceneNode &node);
+	void renderSceneGraph(const SceneNode &node, bool picking=false);
+    void renderNode(const SceneNode* node, glm::mat4 trans, bool picking, const SceneNode* parent, bool isRoot=false);
 	void renderArcCircle();
+
+    void moveJoint(SceneNode* node, double delta_x, double delta_y);
 
 	glm::mat4 m_perpsective;
 	glm::mat4 m_view;
+    glm::mat4 m_translate;
+    glm::mat4 m_rotate;
 
 	LightSource m_light;
 
@@ -77,4 +94,31 @@ protected:
 	std::string m_luaSceneFile;
 
 	std::shared_ptr<SceneNode> m_rootNode;
+
+    // Menu control objects and functions
+    void reset_position();
+    void reset_orientation();
+    void reset_joints();
+    void reset_all();
+
+    void undo();
+    void redo();
+
+    bool options_circle;
+    bool options_z_buffer;
+    bool options_backface_culling;
+    bool options_frontface_culling;
+
+    int interaction_mode;
+
+    bool mouse_button_pressed[3];
+    glm::vec2 mouse_position;
+
+    bool picking_required;
+
+    CommandStack command_stack;
+    SnapShot takeSnapShot();
+    void takeSnapShotHelper(SnapShot* snap, SceneNode* node, int* i);
+    void applySnapShot(SnapShot* snap);
+    void applySnapShotHelper(SnapShot* snap, SceneNode* node, int* i);
 };
