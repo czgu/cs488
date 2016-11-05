@@ -134,3 +134,58 @@ std::ostream & operator << (std::ostream & os, const SceneNode & node) {
 	os << "]\n";
 	return os;
 }
+
+Intersection* SceneNode::intersect(Ray* d) {
+    Intersection* ret = NULL;
+
+    Ray r; r.eye = d->eye; r.dir = d->dir;
+    r.transform(invtrans);
+
+	for(SceneNode *child : this->children) {
+        Intersection* ci = child->intersect(&r);
+
+        if (ci == NULL) {
+            continue;
+        }
+
+        ci->transform(trans, invtrans, d);
+
+        if (ret == NULL) {
+            ret = ci;
+        } else {
+            if (ci->t < ret->t) {
+                delete ret;
+                ret = ci;
+            }
+        }
+    }
+
+    return ret;
+}
+
+Intersection::Intersection(glm::vec3 p, glm::vec3 n, Material* m, double t) :
+    point(p),
+    normal(n),
+    material(m),
+    t(t)
+{
+}
+
+void Ray::transform(glm::mat4& t) {
+    this->eye = vec3(t * glm::vec4(this->eye, 1.0f));
+    this->dir = vec3(t * glm::vec4(this->dir, 0.0f));
+}
+
+void Intersection::transform(glm::mat4& t, glm::mat4& tinv, Ray* d) {
+    this->point = vec3(t * glm::vec4(this->point, 1.0f));
+    this->normal = vec3(glm::transpose(tinv) * glm::vec4(this->normal, 0.0f));
+
+    glm::vec3 diff = this->point - d->eye;
+    this->t = 0.0f;
+    for (int i = 0; i < 3; i++) {
+        if (diff[i] != 0 && d->dir[i] != 0) {
+            this->t = diff[i] / d->dir[i];
+            break;
+        }
+    }
+}

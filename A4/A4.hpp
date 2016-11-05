@@ -23,3 +23,11 @@ void A4_Render(
 		const glm::vec3 & ambient,
 		const std::list<Light *> & lights
 );
+
+Ray* makePrimitiveRay(int x, int y, int w, int h, glm::vec3 a, glm::vec3 b, const glm::vec3 eye, const glm::vec3 view);
+glm::vec3 illuminate(
+    Intersection* intersection,
+    const std::list<Light *>& lights,
+    const glm::vec3& ambient,
+    Ray* ray,
+    SceneNode* root);

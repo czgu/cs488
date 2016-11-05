@@ -25,3 +25,20 @@ void GeometryNode::setMaterial( Material *mat )
 
 	m_material = mat;
 }
+
+Intersection* GeometryNode::intersect(Ray* d) {
+    Intersection* ret = NULL;
+
+    Ray r = *d;
+    r.transform(invtrans);
+
+    double t;
+    glm::vec3 p, n;
+    if (m_primitive->intersect(r.eye, r.dir, p, n, t)) {
+        ret = new Intersection(p, n, this->m_material, t);
+        ret->transform(trans, invtrans, d);
+    }
+
+
+    return ret;
+}

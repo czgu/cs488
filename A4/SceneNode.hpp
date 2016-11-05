@@ -14,6 +14,23 @@ enum class NodeType {
 	JointNode
 };
 
+struct Ray {
+    glm::vec3 eye;
+    glm::vec3 dir;
+
+    void transform(glm::mat4& t);
+};
+
+struct Intersection {
+    glm::vec3 point;
+    glm::vec3 normal;
+    Material* material;
+    double t;
+
+    Intersection(glm::vec3 p, glm::vec3 n, Material* m, double t);
+    void transform(glm::mat4& t, glm::mat4& tinv, Ray* d);
+};
+
 class SceneNode {
 public:
     SceneNode(const std::string & name);
@@ -38,6 +55,7 @@ public:
     void scale(const glm::vec3& amount);
     void translate(const glm::vec3& amount);
 
+    virtual Intersection* intersect(Ray* d);
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
 

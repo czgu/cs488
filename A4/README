@@ -1,0 +1,14 @@
+## Compilation
+- Steps
+    $ premake4 gmake
+    $ make
+    $ ./A4
+
+- There is no modification to the default premake4/make.
+- No additional assumptions. (Presumbly cs488 directory should be downloaded and installed as instructed on the course website)
+- The computer I used to run in lab is GL15
+
+## Manual
+- the missing feature is the extra feature we are required to implement.
+- only issue running command in the /A4 directory. Eg. ./A4 sample.lua. Don't do: cd Assets/; ../A4 nonhier.lua.
+- I load a sunset bmp image and set it as the static background of ray casting.

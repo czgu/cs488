@@ -13,4 +13,6 @@ public:
 
 	Material *m_material;
 	Primitive *m_primitive;
+
+    virtual Intersection* intersect(Ray* d) override;
 };
