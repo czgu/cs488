@@ -9,6 +9,7 @@
 - The computer I used to run in lab is GL15
 
 ## Manual
-- the missing feature is the extra feature we are required to implement.
+- extra feature is reflection, recursively reflect the income eye ray 3 times, the rgb is recursively added by 0.01 * ks * shiniess * rgb from reflection.
+- reflection is implemented last second, so not all images have reflection in them.
 - only issue running command in the /A4 directory. Eg. ./A4 sample.lua. Don't do: cd Assets/; ../A4 nonhier.lua.
 - I load a sunset bmp image and set it as the static background of ray casting.

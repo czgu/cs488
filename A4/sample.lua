@@ -2,7 +2,7 @@
 -- Thomas Pflaum 1996
 
 gold = gr.material({0.9, 0.8, 0.4}, {0.8, 0.8, 0.4}, 25)
-grass = gr.material({0.1, 0.7, 0.1}, {0.0, 0.0, 0.0}, 0)
+grass = gr.material({0.1, 0.7, 0.1}, {0.9, 0.9, 0.9}, 20)
 blue = gr.material({0.7, 0.6, 1}, {0.5, 0.4, 0.8}, 25)
 
 red = gr.material({1.0, 0.0, 0.0}, {0.1, 0.1, 0.1}, 10)
@@ -11,7 +11,7 @@ white = gr.material({1.0, 1.0, 1.0}, {0.1, 0.1, 0.1}, 10)
 yellow = gr.material({1.0, 1.0, 0.0}, {0.1, 0.1, 0.1}, 10)
 purple = gr.material({1.0, 0.0, 1.0}, {0.1, 0.1, 0.1}, 10)
 stone = gr.material({0.8, 0.7, 0.7}, {0.0, 0.0, 0.0}, 0)
-hide = gr.material({0.84, 0.6, 0.53}, {0.3, 0.3, 0.3}, 20)
+hide = gr.material({0.84, 0.6, 0.53}, {0.3, 0.3, 0.3}, 50)
 
 -- #############################################
 -- Read in the cow model from a separate file.

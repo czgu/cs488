@@ -312,7 +312,8 @@ bool NonhierBox::intersect(glm::vec3 orig, glm::vec3 dir, glm::vec3& p, glm::vec
             break;
         }
     }
-    if (i > 1 || roots[i] == DBL_MIN || roots[i] == DBL_MAX) {
+
+    if (i > 1 || (roots[i] == DBL_MIN && roots[i] == DBL_MAX)) {
         // All negative
         return false;
     }

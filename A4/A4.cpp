@@ -63,7 +63,7 @@ void A4_Render(
             Ray* ray = makePrimitiveRay(x, y, w, h, a, b, eye, _view);
             Intersection* intersection = root->intersect(ray);
             vec3 color = illuminate(
-                intersection, lights, ambient, ray, root);
+                intersection, lights, ambient, ray, root, 0);
 
             if (!intersection) {
                 int img_x = (((float)x/w) * img_w);
@@ -106,10 +106,11 @@ glm::vec3 illuminate(
     const std::list<Light* >& lights,
     const glm::vec3& ambient,
     Ray* ray,
-    SceneNode* root
+    SceneNode* root,
+    int recur_depth
 ) {
     vec3 c(0, 0, 0);
-    if (intersection) {
+    if (intersection && recur_depth < 3) {
         PhongMaterial* m = dynamic_cast<PhongMaterial *>(intersection->material);
         if (m == NULL) {
             return c;
@@ -131,6 +132,21 @@ glm::vec3 illuminate(
             Intersection* lightIntersection = root->intersect(&light_ray);
             if (lightIntersection) {
                 continue;
+            }
+
+            // Cast reflection ray
+            vec3 rray = glm::normalize((float)(2 * glm::dot(n,v)) * n - v);
+            Ray reflection_ray;
+            reflection_ray.eye = intersection->point + 0.01 * rray;
+            reflection_ray.dir = rray;
+
+            Intersection* reflectIntersection = root->intersect(&reflection_ray);
+            if (reflectIntersection) {
+                vec3 rcolor = illuminate(
+                    reflectIntersection, lights, ambient, &reflection_ray, root, recur_depth + 1);
+                for (int i = 0; i < 3; i++) {
+                    c[i] += 0.01 * m->m_ks[i] * m->m_shininess * rcolor[i];
+                }
             }
 
             double nl = glm::dot(l, n);

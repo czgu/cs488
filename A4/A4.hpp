@@ -30,4 +30,5 @@ glm::vec3 illuminate(
     const std::list<Light *>& lights,
     const glm::vec3& ambient,
     Ray* ray,
-    SceneNode* root);
+    SceneNode* root,
+    int recur_depth);
