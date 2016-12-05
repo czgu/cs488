@@ -62,11 +62,21 @@ void main() {
     int texRow = texNum / 16;
 
     vec4 color;
+
+    if (texNum == 39) {
+        if (sides) {
+        } else {
+            texcoord.z = 0;
+            sides = true;
+        }
+    }
+
     if (sides) {
         color = texture(tex, vec2((fract(texcoord.x + texcoord.z) + texCol) / 16.0, ((1 - fract(texcoord.y)) + texRow) / 16.0)) * vec4(0.85, 0.85, 0.85, 1.0);
     } else {
         color = texture(tex, vec2((fract(texcoord.y + texcoord.x) + texCol) / 16.0, ((1 - fract(texcoord.z)) + texRow) / 16.0));
     }
+
 
     // Check Shadow
     float visibility = 1.0;

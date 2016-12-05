@@ -6,7 +6,8 @@ includeDirList = {
     "../shared",
     "../shared/include",
     "../shared/gl3w",
-    "../shared/imgui"
+    "../shared/imgui",
+    "../shared/lodepng",
 }
 
 libDirectories = { 
@@ -19,8 +20,10 @@ if os.get() == "macosx" then
         "cs488-framework",
         "imgui",
         "glfw3",
-        "lua"
-
+        "lua",
+        "lodepng",
+        "SDL2",
+        "SDL2_mixer"
     }
 end
 
@@ -39,7 +42,10 @@ if os.get() == "linux" then
         "X11",
         "stdc++",
         "dl",
-        "pthread"
+        "pthread",
+        "lodepng",
+        "SDL2",
+        "SDL2_mixer"
     }
 end
 
@@ -53,7 +59,7 @@ buildOptions = {"-std=c++11"}
 solution "CS488-Projects"
     configurations { "Debug", "Release" }
 
-    project "A5"
+    project "Game"
         kind "ConsoleApp"
         language "C++"
         location "build"

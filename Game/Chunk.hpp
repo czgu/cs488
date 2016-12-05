@@ -13,6 +13,7 @@
 enum BlockType {
     EMPTY = 0,
     GRASS,
+    GRASS_BLADE,
     DIRT,
     SAND,
     WATER,
@@ -22,6 +23,7 @@ enum BlockType {
     NUM_BLOCKS
 };
 
+bool transparentBlock(BlockType block);
 unsigned int getBlockFace(BlockType type, unsigned face);
 
 class Chunk {
@@ -46,6 +48,7 @@ private:
 
     // Open Gl Variables
     unsigned int numVertices;
+    unsigned int numCubeVertices;
     GLuint m_vbo;
     GLuint m_vao_cube;
     GLuint m_vao_shadow;

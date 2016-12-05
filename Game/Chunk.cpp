@@ -63,7 +63,7 @@ void Chunk::renderShadow(glm::mat4& VP) {
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBindVertexArray(m_vao_shadow);
-    glDrawArrays(GL_TRIANGLES, 0, numVertices);
+    glDrawArrays(GL_TRIANGLES, 0, numCubeVertices);
 
     CHECK_GL_ERRORS;
 }
@@ -87,7 +87,11 @@ void Chunk::render(glm::mat4& view, glm::mat4& depth) {
     glUniformMatrix4fv( cube_shader->depthBiasMVP_uni, 1, GL_FALSE, value_ptr( depthMVP ) );
 
     glBindVertexArray(m_vao_cube);
-    glDrawArrays(GL_TRIANGLES, 0, numVertices);
+    glDrawArrays(GL_TRIANGLES, 0, numCubeVertices);
+
+    glDisable(GL_CULL_FACE);
+    glDrawArrays(GL_TRIANGLES, numCubeVertices, numVertices);
+    glEnable(GL_CULL_FACE);
 
     CHECK_GL_ERRORS;
 }
@@ -120,7 +124,12 @@ void Chunk::updateBlock() {
     for (int k = 0; k < CHUNK_SIZE; k++) {
         for (int j = 0; j < CHUNK_SIZE; j++) {
             for (int i = 0; i < CHUNK_SIZE; i++) {
-                if (blocks[i][j][k] == BlockType::EMPTY || surrounded(i, j, k)) {
+                if (blocks[i][j][k] == BlockType::GRASS_BLADE) {
+                    if (blocks[i][j-1][k] != BlockType::GRASS) {
+                        blocks[i][j][k] = BlockType::EMPTY;
+                    }
+                    skipCheck[i][j][k] = true;
+                } else if (blocks[i][j][k] == BlockType::EMPTY || surrounded(i, j, k)) {
                     skipCheck[i][j][k] = true;
                 } else {
                     skipCheck[i][j][k] = false;
@@ -130,6 +139,7 @@ void Chunk::updateBlock() {
     }
 
     numVertices = 0;
+    numCubeVertices = 0;
     int x = 0;
 
     int face = 0;
@@ -153,7 +163,7 @@ void Chunk::updateBlock() {
                     xx += vertex_size;
                     setCubeVertex(verts, xx, i + 1, j + 1, k, faceType, face);
                 }
-                else if (!(k > 0 && blocks[i][j][k - 1] != BlockType::EMPTY)) {
+                else if (!(k > 0 && !transparentBlock(blocks[i][j][k - 1]))) {
                     setCubeVertex(verts, x, i, j, k, faceType, face);
                     setCubeVertex(verts, x, i + 1, j + 1, k, faceType, face);
                     setCubeVertex(verts, x, i + 1, j, k, faceType, face);
@@ -189,7 +199,7 @@ void Chunk::updateBlock() {
                     setCubeVertex(verts, xx, i + 1, j, k + 1, faceType, face);
                     setCubeVertex(verts, xx, i + 1, j + 1, k + 1, faceType, face);
                     xx += vertex_size;
-                } else if (!(k < CHUNK_SIZE - 1  && blocks[i][j][k + 1] != BlockType::EMPTY)) {
+                } else if (!(k < CHUNK_SIZE - 1  && !transparentBlock(blocks[i][j][k + 1]))) {
                     setCubeVertex(verts, x, i + 1, j, k + 1, faceType, face);
                     setCubeVertex(verts, x, i, j + 1, k + 1, faceType, face);
                     setCubeVertex(verts, x, i, j, k + 1, faceType, face);
@@ -224,7 +234,7 @@ void Chunk::updateBlock() {
                     setCubeVertex(verts, xx, i, j, k + 1, faceType, face);
                     setCubeVertex(verts, xx, i, j + 1, k + 1, faceType, face);
                     xx += vertex_size;
-                } else if (!(i > 0 && blocks[i - 1][j][k] != BlockType::EMPTY)) {
+                } else if (!(i > 0 && !transparentBlock(blocks[i - 1][j][k]))) {
                     setCubeVertex(verts, x, i, j, k + 1, faceType, face);
                     setCubeVertex(verts, x, i, j + 1, k, faceType, face);
                     setCubeVertex(verts, x, i, j, k, faceType, face);
@@ -258,7 +268,7 @@ void Chunk::updateBlock() {
                     xx += vertex_size;
                     xx += vertex_size;
                     setCubeVertex(verts, xx, i + 1, j + 1 , k + 1, faceType, face);
-                } else if (!(i < CHUNK_SIZE - 1  && blocks[i + 1][j][k] != BlockType::EMPTY)) {
+                } else if (!(i < CHUNK_SIZE - 1  && !transparentBlock(blocks[i + 1][j][k]))) {
                     setCubeVertex(verts, x, i + 1, j, k, faceType, face);
                     setCubeVertex(verts, x, i + 1, j + 1, k + 1, faceType, face);
                     setCubeVertex(verts, x, i + 1, j, k + 1, faceType, face);
@@ -294,7 +304,7 @@ void Chunk::updateBlock() {
                     setCubeVertex(verts, xx, i, j, k + 1, faceType, face);
                     xx += vertex_size;
                     xx += vertex_size;
-                } else if (!(j > 0 && blocks[i][j - 1][k] != BlockType::EMPTY)) {
+                } else if (!(j > 0 && !transparentBlock(blocks[i][j - 1][k]))) {
                     setCubeVertex(verts, x, i, j, k + 1, faceType, face);
                     setCubeVertex(verts, x, i + 1, j, k, faceType, face);
                     setCubeVertex(verts, x, i + 1, j, k + 1, faceType, face);
@@ -328,7 +338,7 @@ void Chunk::updateBlock() {
                     xx += vertex_size;
                     setCubeVertex(verts, xx, i, j + 1, k + 1, faceType, face);
                     setCubeVertex(verts, xx, i + 1, j + 1, k + 1, faceType, face);
-                } else if (!(j < CHUNK_SIZE - 1  && blocks[i][j + 1][k] != BlockType::EMPTY)) {
+                } else if (!(j < CHUNK_SIZE - 1  && !transparentBlock(blocks[i][j + 1][k]))) {
                     setCubeVertex(verts, x, i, j + 1, k, faceType, face);
                     setCubeVertex(verts, x, i + 1, j + 1, k + 1, faceType, face);
                     setCubeVertex(verts, x, i + 1, j + 1, k, faceType, face);
@@ -339,10 +349,39 @@ void Chunk::updateBlock() {
                 } else {
                     visible = false;
                 }
-
             }
         }
     }
+
+    numCubeVertices = x / vertex_size;
+
+    face = 3;
+    int faceType = 39;
+    for (int i = 0; i < CHUNK_SIZE; i++) {
+        for (int j = 0; j < CHUNK_SIZE; j++) {
+            for (int k = 0; k < CHUNK_SIZE; k++) {
+                if (blocks[i][j][k] != BlockType::GRASS_BLADE) {
+                    continue;
+                }
+                setCubeVertex(verts, x, i, j, k, faceType, face);
+                setCubeVertex(verts, x, i + 1, j, k + 1, faceType, face);
+                setCubeVertex(verts, x, i + 1, j + 1, k + 1, faceType, face);
+                setCubeVertex(verts, x, i, j, k, faceType, face);
+                setCubeVertex(verts, x, i, j + 1, k, faceType, face);
+                setCubeVertex(verts, x, i + 1, j + 1, k + 1, faceType, face);
+
+                faceType = -39;
+
+                setCubeVertex(verts, x, i, j, k + 1, faceType, face);
+                setCubeVertex(verts, x, i + 1, j, k, faceType, face);
+                setCubeVertex(verts, x, i + 1, j + 1, k, faceType, face);
+                setCubeVertex(verts, x, i, j, k + 1, faceType, face);
+                setCubeVertex(verts, x, i, j + 1, k + 1, faceType, face);
+                setCubeVertex(verts, x, i + 1, j + 1, k, faceType, face);
+            }
+        }
+    }
+
 
     numVertices = x / vertex_size;
 
@@ -394,6 +433,9 @@ void Chunk::createTerrain(Perlin* perlin) {
                 for (int j = 0; j < maxHeight; j++) {
                     if (j == height - 1 && height  == maxHeight) {
                         blocks[i][j][k] = GRASS;
+                        if (j < CHUNK_SIZE - 1 && j > 10 && i % 2 == 0 && k % 2 == 1) {
+                            blocks[i][j + 1][k] = GRASS_BLADE;
+                        }
                     } else if ((height == 0 && j == 0) || (height < maxHeight && j == height - 1)) {
                         blocks[i][j][k] = SAND;
                     } else if (j >= height) {
@@ -409,27 +451,41 @@ void Chunk::createTerrain(Perlin* perlin) {
     }
 }
 
+bool transparentBlock(BlockType block) {
+    switch (block) {
+        case EMPTY:
+        case GRASS_BLADE:
+        case WATER:
+            return true;
+            break;
+        default:
+            return false;
+            break;
+    }
+    return false;
+}
+
 bool Chunk::surrounded(int x, int y, int z) {
     if (x == 0 || y == 0 || z == 0 || x == CHUNK_SIZE - 1 || y == CHUNK_SIZE - 1 || z == CHUNK_SIZE - 1) {
         return false;
     }
     // Check 6 sides
-    if (blocks[x + 1][y][z] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x + 1][y][z])) {
         return false;
     }
-    if (blocks[x - 1][y][z] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x - 1][y][z])) {
         return false;
     }
-    if (blocks[x][y + 1][z] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x][y + 1][z])) {
         return false;
     }
-    if (blocks[x][y - 1][z] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x][y - 1][z])) {
         return false;
     }
-    if (blocks[x][y][z + 1] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x][y][z + 1])) {
         return false;
     }
-    if (blocks[x][y][z - 1] == BlockType::EMPTY) {
+    if (transparentBlock(blocks[x][y][z - 1])) {
         return false;
     }
     return true;
@@ -473,6 +529,13 @@ unsigned int getBlockFace(BlockType type, unsigned face) {
                 return 2;
             } else {
                 return 40;
+            }
+            break;
+        case GRASS_BLADE:
+            if (face < 4) {
+                return 39;
+            } else {
+                return 31;
             }
             break;
         case DIRT:
