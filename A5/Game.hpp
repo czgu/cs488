@@ -7,16 +7,23 @@
 
 #include "Chunk.hpp"
 #include "ChunkManager.hpp"
+#include "GLUtils.hpp"
+#include "Objects.hpp"
+#include "Utils.hpp"
 
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+
+#include <SDL2/SDL_mixer.h>
+
 
 #define NUM_JOINT 32
 
 struct LightSource {
 	glm::vec3 position;
 	glm::vec3 rgbIntensity;
+    glm::vec3 ambientIntensity;
 };
 
 class Game : public CS488Window {
@@ -43,27 +50,45 @@ protected:
     void initShader();
     void initGameWorld();
 	void initCamera();
+    void initTexture();
+    void initLightSources();
+
+    // -- Update methods
+    void updateViewMatrix();
+    void uploadCommonSceneUniforms();
+    LightSource getSunLight();
 
     // -- Open GL variables
-    ShaderProgram m_shader;
-    GLint PV_uni;
+    CubeShader* cube_shader;
+    ShadowShader* shadow_shader;
+    ParticleShader* particle_shader;
+
+    FrameBuffer* shadowFrameBuffer;
 
     // -- Render variables
-    glm::mat4 m_perspective;
-	glm::mat4 m_view;
-    glm::mat4 m_translate;
-    glm::mat4 m_rotate;
+    glm::mat4 m_shadow_perspective;
+    glm::mat4 m_shadow_view;
 
 	LightSource m_light;
+    Particles* particle_system;
+    bool enablePlayerParticle;
+
+    // Control variables
     bool mouse_button_pressed[3];
     glm::vec2 mouse_position;
 
     ChunkManager* worldManager;
+    Texture* cubeTexture;
+    Texture* shadowTexture;
 
-	void updateViewMatrix();
     // Game logic variables
-    glm::vec3 player_position;
-    glm::vec3 player_facing;
-    glm::vec3 player_right;
+    float timeOfDay;
+
     // Control Variables
+    Player player;
+    Camera camera;
+
+    Audio audio;
+
+    bool msaa;
 };

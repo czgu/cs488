@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <iostream>
+
 //---------------------------------------------------------------------------------------
 JointNode::JointNode(const std::string& name)
 	: SceneNode(name), hasEmptyJoint(false)
@@ -47,6 +49,10 @@ static double clamp(JointNode::JointRange range, double val) {
         return range.min;
     }
     return val;
+}
+
+void JointNode::set_x_rotate(double delta) {
+    m_joint_x.curr = clamp(m_joint_x, delta);
 }
 
 void JointNode::rotate_joint(JointRange& range, double delta) {

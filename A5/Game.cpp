@@ -1,6 +1,5 @@
 #include "Game.hpp"
 #include "scene_lua.hpp"
-using namespace std;
 
 #include "cs488-framework/GlErrorCheck.hpp"
 #include "cs488-framework/MathUtils.hpp"
@@ -15,9 +14,11 @@ using namespace std;
 #include <glm/ext.hpp>
 #include <glm/gtx/norm.hpp>
 
+
 #include <cstdlib>
 
 using namespace glm;
+using namespace std;
 
 static bool show_gui = true;
 
@@ -27,16 +28,19 @@ const int button_types[] = {GLFW_MOUSE_BUTTON_LEFT, GLFW_MOUSE_BUTTON_MIDDLE, GL
 
 //----------------------------------------------------------------------------------------
 // Constructor
-Game::Game()
+Game::Game() : msaa(false), enablePlayerParticle(false)
 {
-
 }
 
 //----------------------------------------------------------------------------------------
 // Destructor
 Game::~Game()
 {
+    delete cubeTexture;
+    delete worldManager;
 
+    delete shadowFrameBuffer;
+    delete particle_system;
 }
 
 //----------------------------------------------------------------------------------------
@@ -51,41 +55,99 @@ void Game::init()
     initShader();
 	initCamera();
     initGameWorld();
+    initTexture();
+	initLightSources();
+
+    audio.playBackground();
+    particle_system = new Particles();
 }
 
 void Game::initGameWorld() {
-    this->worldManager = new ChunkManager(&m_shader);
+    this->worldManager = new ChunkManager();
+    this->player.loadModel();
+    timeOfDay = 0;
 }
 
 //----------------------------------------------------------------------------------------
 void Game::initShader() {
-	// Build the shader
-	m_shader.generateProgramObject();
-	m_shader.attachVertexShader(
-		getAssetFilePath( "VertexShader.vs" ).c_str() );
-	m_shader.attachFragmentShader(
-		getAssetFilePath( "FragmentShader.fs" ).c_str() );
-	m_shader.link();
-
-    // Set up uniforms
-    PV_uni = m_shader.getUniformLocation("PV");
+    cube_shader = CubeShader::getShader();
+    shadow_shader = ShadowShader::getShader();
+    particle_shader = ParticleShader::getShader();
 }
 
 //----------------------------------------------------------------------------------------
 void Game::initCamera()
 {
 	float aspect = ((float)m_windowWidth) / m_windowHeight;
-	m_perspective = glm::perspective(degreesToRadians(60.0f), aspect, 0.1f, 100.0f);
+    camera.aspect = aspect;
+    camera.generateProjectionMatrix();
 
-    player_position = vec3(0.0f, 12.0f, 8.0f);
-    player_facing = vec3(0.0, 0.0, 1.0f);
-    player_right = vec3(1.0f, 0.0, 0.0f);
+    m_shadow_perspective = glm::ortho<float>(-30,30,-30,30,-10,200);
+    //m_perspective = m_shadow_perspective;
+    //m_shadow_perspective = m_perspective;
 }
 
+//----------------------------------------------------------------------------------------
+
+void Game::initTexture() {
+    shadowTexture = new Texture(1024, 768, "depth");
+
+    cubeTexture = new Texture(getAssetFilePath("tileSet.png"));
+    shadowFrameBuffer = new FrameBuffer(shadowTexture);
+
+    cube_shader->enable();
+    cubeTexture->bind(cube_shader->tex_uni);
+    shadowTexture->bind(cube_shader->texShadow_uni);
+    cube_shader->disable();
+}
+
+//----------------------------------------------------------------------------------------
+void Game::initLightSources() {
+    m_light.position = vec3(0.0f, 1.0f, 0.0f);
+    m_light.rgbIntensity = vec3(0.8f);
+}
 
 //----------------------------------------------------------------------------------------
 void Game::updateViewMatrix() {
-	m_view = glm::lookAt(player_position, player_facing + player_position, vec3(0.0f, 1.0f, 0.0f));
+    camera.update(player);
+    m_shadow_view = glm::lookAt(m_light.position * 10, m_light.position * 9, vec3(0, 1, 0));
+    // m_shadow_view = m_view;
+}
+
+LightSource Game::getSunLight() {
+    struct LightSource ret;
+    float Day = (timeOfDay / 1440.0f);
+    // 0 Sun Rise, 0.25 Noon, 0.5 Sun Set, 0.75 MidNight, 1.0 Sun Rise
+    if (Day < 0.5) { // Day
+        ret.rgbIntensity = getSunLightColor(Day);
+        ret.ambientIntensity = ret.rgbIntensity * 0.5;
+        float angle = Day * 2 * PI;
+        glm::mat4 rotate = glm::rotate(mat4(), angle, vec3(0.0f, 0.0f, 1.0f));
+        // X+ is east
+        ret.position = vec3(rotate * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    } else { // Night
+        ret.rgbIntensity = getSunLightColor(Day);
+        ret.ambientIntensity = ret.rgbIntensity * 0.4;
+        float angle = (1.0 - Day) * 2 * PI;
+        glm::mat4 rotate = glm::rotate(mat4(), angle, vec3(0.0f, 0.0f, 1.0f));
+        // X+ is east
+        ret.position = vec3(rotate * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    }
+    return ret;
+}
+
+void Game::uploadCommonSceneUniforms() {
+    glUniformMatrix4fv( cube_shader->P_uni, 1, GL_FALSE, value_ptr( camera.m_perspective ) );
+
+    GLint location;
+    {
+        glClearColor(m_light.rgbIntensity.x, m_light.rgbIntensity.y, m_light.rgbIntensity.z, 1.0);
+        glUniform3fv(cube_shader->light_position_uni, 1, value_ptr(m_light.position));
+        glUniform3fv(cube_shader->light_rgbIntensity_uni, 1, value_ptr(m_light.rgbIntensity));
+        //-- Set background light ambient intensity
+        glUniform3fv(cube_shader->ambientIntensity_uni, 1, value_ptr(m_light.ambientIntensity));
+        CHECK_GL_ERRORS;
+    }
 
 }
 
@@ -95,8 +157,30 @@ void Game::updateViewMatrix() {
  */
 void Game::appLogic()
 {
+    if (enablePlayerParticle) {
+        for (int i = 0; i < 5; i++) {
+            float randx = ((float)rand() / RAND_MAX) * 2 - 1;
+            float randz = ((float)rand() / RAND_MAX) * 2 - 1;
+            float randsize = ((float)rand() / RAND_MAX) / 2;
+            float r = ((float)rand() / RAND_MAX);
+            float g = ((float)rand() / RAND_MAX);
+            float b = ((float)rand() / RAND_MAX);
+
+            particle_system->addParticle(player.position, vec3(randx, 4, randz), vec4(r,g,b,1), randsize);
+        }
+    }
+
+    player.updatePosition(worldManager, &audio);
 	// Place per frame, application logic here ...
-    worldManager->update(player_position);
+    timeOfDay = wrap(timeOfDay + 1.0/60, 0, 1440);
+
+    worldManager->update(player.position);
+
+    m_light = getSunLight();
+
+    updateViewMatrix();
+
+    particle_system->updateParticles(camera.position);
 }
 
 //----------------------------------------------------------------------------------------
@@ -127,7 +211,26 @@ void Game::guiLogic()
 			glfwSetWindowShouldClose(m_window, GL_TRUE);
 		}
 
+        if ( ImGui::SliderFloat( "Time ", &timeOfDay, 0, 1440, "%.0f")) {
+        }
+
+        ImGui::Checkbox("First Person", &camera.first_person);
+        ImGui::Checkbox("Enable Particles", &enablePlayerParticle);
+
+        if (ImGui::Checkbox("msaa", &msaa)) {
+            if (msaa) {
+                glEnable(GL_MULTISAMPLE);
+            } else {
+                glDisable(GL_MULTISAMPLE);
+            }
+        }
+
 		ImGui::Text( "Framerate: %.1f FPS", ImGui::GetIO().Framerate );
+
+
+		ImGui::Text( "Position %f %f %f", player.position.x, player.position.y, player.position.z);
+		// ImGui::Text( "Solid Block %d", player.collideEnvironment(player.position, worldManager));
+		ImGui::Text( "Solid Block 2 %d", worldManager->solidBlock(player.position));
 
 	ImGui::End();
 }
@@ -137,19 +240,36 @@ void Game::guiLogic()
  * Called once per frame, after guiLogic().
  */
 void Game::draw() {
+    glm::mat4 VP = m_shadow_perspective * m_shadow_view;
+
+    shadowFrameBuffer->bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    shadow_shader->enable();
+        glEnable( GL_DEPTH_TEST );
+        glDisable( GL_CULL_FACE );
+        worldManager->renderShadow(VP);
+        player.renderShadow(VP);
+
+    shadow_shader->disable();
+    shadowFrameBuffer->unbind();
+
     // Render world
-    updateViewMatrix();
-    mat4 PV = m_perspective * m_view;
-    //* m_translate * m_rotate;
-    m_shader.enable();
+    glm::mat4 biasDepthVP = getBiasMatrix(VP);
+
+    cube_shader->enable();
         glEnable( GL_DEPTH_TEST );
         glEnable( GL_CULL_FACE );
+        uploadCommonSceneUniforms();
         //glCullFace( GL_FRONT );
+        worldManager->render(camera.m_view, biasDepthVP);
+        player.render(camera.m_view);
+    cube_shader->disable();
 
-		glUniformMatrix4fv( PV_uni, 1, GL_FALSE, value_ptr( PV ) );
-        worldManager->render();
-
-    m_shader.disable();
+    particle_shader->enable();
+        glEnable( GL_DEPTH_TEST );
+        particle_system->render(camera.m_perspective * camera.m_view);
+    particle_shader->disable();
 
 	CHECK_GL_ERRORS;
 }
@@ -192,13 +312,11 @@ bool Game::mouseMoveEvent (
 	// Fill in with event handling code...
 	if (!ImGui::IsMouseHoveringAnyWindow()) {
         if (this->mouse_button_pressed[0]) {
-            vec2 delta = new_mouse_position - mouse_position;
-            m_rotate = m_rotate * glm::rotate(mat4(), (float)((delta.x/m_windowWidth) * 2 * PI), vec3(0.0f, 1.0f, 0.0f));
-            player_facing = vec3(m_rotate * vec4(0, 0, 1, 1));
-            player_right = glm::cross(player_facing, vec3(0.0f, 1.0f, 0.0f));
+            vec2 delta = 2 * PI * (new_mouse_position - mouse_position) / m_windowWidth;
+            camera.updateCameraRotation(delta);
+            player.updateRotation(delta.x);
         }
     }
-
     mouse_position = new_mouse_position;
 
 	return eventHandled;
@@ -224,6 +342,35 @@ bool Game::mouseButtonInputEvent (
                     eventHandled = true;
                 }
             }
+
+            if (button == GLFW_MOUSE_BUTTON_LEFT && actions == GLFW_PRESS) {
+
+                glm::vec3 blockPos;
+                bool deletedBlock = false;
+
+                for (int i = 0; i < 2; i++) {
+                    blockPos = player.position + player.facing + vec3(0, i, 0);
+                    deletedBlock =  worldManager->destroyBlock(blockPos);
+
+                    if (deletedBlock) {
+                        break;
+                    }
+                }
+
+                if (deletedBlock) {
+                    for (int i = 0; i < 20; i++) {
+                        float randx = ((float)rand() / RAND_MAX) * 2 - 1;
+                        float randz = ((float)rand() / RAND_MAX) * 2 - 1;
+                        float randsize = ((float)rand() / RAND_MAX) / 2;
+                        float r = ((float)rand() / RAND_MAX) / 2 + 0.5f;
+                        float g = ((float)rand() / RAND_MAX) / 2;
+                        float b = ((float)rand() / RAND_MAX) / 4;
+
+                        particle_system->addParticle(blockPos, vec3(randx, 4, randz), vec4(r,g,b,1), randsize);
+                    }
+                    audio.playRockBreak();
+                }
+            }
         }
     }
 
@@ -241,6 +388,7 @@ bool Game::mouseScrollEvent (
 	bool eventHandled(false);
 
 	// Fill in with event handling code...
+    camera.updateZoom(yOffSet);
 
 	return eventHandled;
 }
@@ -270,41 +418,38 @@ bool Game::keyInputEvent (
 	bool eventHandled(false);
 
 	if( action == GLFW_PRESS || action == GLFW_REPEAT ) {
-        if (key == GLFW_KEY_SPACE) {
+        if (key == GLFW_KEY_SPACE && player.fallingTime == 0) {
             // Player up
-            player_position.y += 1.0f;
-            eventHandled = true;
+            player.updateDelta(glm::vec3(0, 0.3, 0));
+            audio.playJump();
         }
 
         if (key == GLFW_KEY_LEFT_SHIFT) {
             // Player up
-            player_position.y -= 1.0f;
-            eventHandled = true;
+            player.updateDelta(glm::vec3(0, -0.3, 0));
         }
 
         if (key == GLFW_KEY_A) {
             // Player up
-            player_position -= player_right;
+            player.updateDelta(-player.right * 0.5);
             //eventHandled = true;
         }
 
 
         if (key == GLFW_KEY_D) {
             // Player up
-            player_position += player_right;
+            player.updateDelta(player.right * 0.5);
             //eventHandled = true;
         }
 
         if (key == GLFW_KEY_W) {
-            // Player up
-            player_position += player_facing;
-            eventHandled = true;
+            // Player forward
+            player.updateDelta(player.facing * 0.5);
         }
 
         if (key == GLFW_KEY_S) {
-            // Player up
-            player_position -= player_facing;
-            eventHandled = true;
+            // Player backward
+            player.updateDelta(-player.facing * 0.5);
         }
 
         if (key == GLFW_KEY_Q) {

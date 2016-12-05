@@ -17,6 +17,8 @@ public:
     void rotate_joint(JointRange& range, double delta);
     void reset_joint();
 
+    void set_x_rotate(double delta);
+
     glm::mat4 get_x_rotate() const;
     glm::mat4 get_y_rotate() const;
 
